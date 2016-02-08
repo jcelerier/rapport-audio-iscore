@@ -1,0 +1,103 @@
+\documentclass[french,12pt,a4paper]{article}
+\usepackage{fontspec}
+\usepackage[french]{babel}
+\usepackage{microtype}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\setmainfont[Ligatures=TeX,Scale=1.1]{EB Garamond}
+
+\title{Audio et i-score}
+\author{Jean-Michaël Celerier}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+Ce document présente différentes possibilités 
+pour l'écriture et l'utilisation de son dans i-score, 
+et les environnements qui peuvent lui être adjoints.
+
+\subsection{Problématique}
+Les questions auxquelles ce document tente d'apporter une ou plusieurs réponses sont les suivantes : 
+\begin{itemize}
+    \item Quel doit être l'agencement des responsabilités entre i-score et les outils annexes pour avoir des possibilités d'écriture maximale.
+    Cette question de partage de responsabilités se pose aussi au niveau des utilisateurs de ces outils : qui utillise i-score ? Qui utilise wWise ? Qui utilise Unity ? 
+    \item Quelles sont les contraintes techniques qui peuvent s'appliquer lors de l'interopérabilité avec différents environnements, et comment les résoudre. 
+    Par exemple, comment faire en sorte que l'environnement fonctionne sur mobile.
+    \item Comment doit fonctionner la gestion des médias dans un projet complet.
+    \item Comment doit fonctionner la répartition dans un cas ou l'on désire produire une \oe uvre distribuée; cela pose la question de la séparation du moteur d'édition et d'exécution dans le cas du son, ainsi que de leur communication.
+    \item Quelles sont les problématiques d'écriture qui se pose lorsque l'on désire écrire des scènes sonores ? (Mute de certaines parties ? Collaboration à l'écriture ?)
+    \item Un modèle de calcul a-t-il sa place dans l'environnement, et si oui, qui doit le fournir, et où ces calculs sont-ils écrits ?
+    
+\end{itemize}
+- fonctionnement sur mobile / web ? iOS : pas d'IPC : https://developer.apple.com/library/ios/documentation/iPhone/Conceptual/iPhoneOSProgrammingGuide/Inter-AppCommunication/Inter-AppCommunication.html
+Tout intégrer dans une appli ?
+- Séparation écriture / exécution
+- gestion des médias ?
+- répartition ? (son sur téléphone)
+- facilité de l'écriture : côté GAF ? côté BY ? côté artistes ?
+- modèle de calcul ? veut-on écrire une cumulation d'effets dans i-score 
+ou bien avoir tous les calculs faits à l'extérieur ?
+
+\section{Types de moteurs audio}
+- Audiographes
+- Moteurs simples
+- Logiciels (Max, etc.)
+- Moteurs de jeu
+- Moteurs déclaratifs
+- Briques d'effets / de synthèse
+- DSL
+
+Autre possibilitié intéressante issue de Faust : utiliser LLVM pour recompiler 
+à la volée du patch ?
+\section{Gestion de la spatialisation}
+
+\section{Briques en présence}
+- Source de données spatiales fixées (carte, scénario, tableau, ...).
+- i-score : scénarisation
+- Source de données spatiales temps-réel (GPS, etc.).
+
+\section{Possibilités d'implémentation}
+Questions : 
+* qui gère la sortie son ?
+* qui gère la spatialisation en sortie (sur les hauts-parleurs)
+* qui gère la spatialisation en entrée (des objets)
+* qui applique des effets
+* qui contrôle l'écoulement du temps scénaristique
+* qui fait office de source sonore
+* qui communique avec qui
+
+- SuperCollider comme moteur audio ?
+- Tout dans i-score ? 
+- libaudiostream et la place de FaUST ?
+- Grapholine ?
+- Problème du contrôle si deux moteurs.
+
+Cas 1. Séquenceur intégré à i-score
+i-score devient live
+Question principale : gestion de l'horloge
+Possibilité : 
+- Un processus s'enregistre aurpès du mixeur
+- Quand le processus est démarré, le mixeur appelle pull() dessus
+- Problématique : si le processus est déclenché via un évènement interactif, il est nécessaire de le prévoir (par exemple en commençant à appeler pull dès que l'on est dans la zone interactive, ou bien en utilisant des mutex / compteurs atomiques, ou bien en rajoutant de la latence, ou bie en mangeant le début.)
+- Problématique : bufferisation si effet sonore met du temps à s'applique
+
+Cas 2. Utilisation d'un séquenceur externe
+
+Cas 3. Utilisation de i-score à haut niveau pour grands scénarios et à bas niveau pour objets sonores.
+Entre les deux communications avec objets qui gèrent le son.
+
+Cas 4. Utilisation de wWise 
+Implémentation de i-score / grapholine / autre comme plug-in wWise ?
+
+Pb. de la bufferistaion : temps-réel, latence ?
+
+\section{Questions sémantiques}
+Possibilté d'utilisation d'un outil comme OWL ?
+
+\section{Utilisation pour les applications possibles}
+- Tableaux, installs, etc.
+- Morceaux de musiques interactifs que l'on peut distribuer par internet ?
+
+\end{document}
