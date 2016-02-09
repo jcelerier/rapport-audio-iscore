@@ -4,12 +4,23 @@
 \usepackage{microtype}
 \usepackage[utf8]{inputenc}
 \usepackage{geometry}
-\usepackage{hyperref}
+\usepackage{tikz}
+
+\usepackage[colorlinks]{hyperref}
 \usepackage{acronym}
 \usepackage{listings}
 \setmainfont[Ligatures=TeX,Scale=1.1]{EB Garamond}
 \setmonofont[Scale=1.0]{Fira Code}
 \renewcommand{\footnotesize}{\fontsize{7pt}{9pt}\selectfont}
+
+\let\oldFootnote\footnote
+\newcommand\nextToken\relax
+
+\renewcommand\footnote[1]{%
+	\oldFootnote{#1}\futurelet\nextToken\isFootnote}
+
+\newcommand\isFootnote{%
+	\ifx\footnote\nextToken\textsuperscript{,}\fi}
 
 \lstset{basicstyle=\fontsize{10pt}{11pt}\selectfont\ttfamily,breaklines=true}
 \acrodef{DSL}{Domain Specific Language}
@@ -30,7 +41,7 @@ et les environnements qui peuvent lui être adjoints.
 Les questions auxquelles ce document tente d'apporter une ou plusieurs réponses sont les suivantes : 
 \begin{itemize}
     \item Quel doit être l'agencement des responsabilités entre i-score et les outils annexes pour avoir des possibilités d'écriture maximale.
-    Cette question de partage de responsabilités se pose aussi au niveau des utilisateurs de ces outils : qui utillise i-score ? Qui utilise wWise ? Qui utilise Unity ? 
+    Cette question de partage de responsabilités se pose aussi au niveau des utilisateurs de ces outils : qui utilise i-score ? Qui utilise wWise ? Qui utilise Unity ? 
     \item Quelles sont les contraintes techniques qui peuvent s'appliquer lors de l'interopérabilité avec différents environnements, et comment les résoudre. 
     Par exemple, comment faire en sorte que l'environnement fonctionne sur mobile.
     \item Comment doit fonctionner la gestion des médias dans un projet complet.
@@ -51,10 +62,7 @@ La méthode standard est de communiquer via internet.
 
 Plusieurs approches : Audiobus, Ableton Link.
 
-Pour Android il n'y a pas encore de standard pour le faire
-\footnote{\url{http://developer.samsung.com/galaxy\#professional-audio}}
-\footnote{\url{http://superpowered.com/}}
-\footnote{\url{http://discchord.com/blog/2013/9/4/patchfield-audio-architecture-for-android.html}}.
+Pour Android il n'y a pas encore de standard pour le faire\footnote{\url{http://developer.samsung.com/galaxy\#professional-audio}}\footnote{\url{http://superpowered.com/}}\footnote{\url{http://discchord.com/blog/2013/9/4/patchfield-audio-architecture-for-android.html}}.
 
 \section{Types de moteurs audio}
 Il existe de nombreuses possibilités pour écrire une application 
@@ -114,42 +122,117 @@ Les outils dont on dispose sont :
     i-score et wWise en sont.
     \item Des scènes spatiales. 
     Ce sont des descriptions et agencements d'objets en deux ou trois dimensions qui peuvent évoluer.
-    \item Des moteurs de son.
+    \item Des moteurs de son, tels que décrits précédemment.
     \item Des moteurs de physique : prennent à un instant t une scène spatiale et la transforment en une autre scène après application des lois physiques en vigueur (gravité, etc.).
-    \item Des sources de données spatiales.
+    \item Des sources de données spatiales : GPS, etc.
 \end{itemize}
 
 \section{Possibilités d'implémentation}
 Questions : 
-* qui gère la sortie son ?
-* qui gère la spatialisation en sortie (sur les hauts-parleurs)
-* qui gère la spatialisation en entrée (des objets)
-* qui applique des effets
-* qui contrôle l'écoulement du temps scénaristique
-* qui fait office de source sonore
-* qui communique avec qui
-
+\begin{itemize}
+\item qui gère la sortie son ?
+\item qui gère la spatialisation en sortie (sur les hauts-parleurs)
+\item qui gère la spatialisation en entrée (des objets)
+\item qui applique des effets
+\item qui contrôle l'écoulement du temps scénaristique
+\item qui fait office de source sonore
+\item qui communique avec qui
+\end{itemize}
 - SuperCollider comme moteur audio ?
 - Tout dans i-score ? 
 - libaudiostream et la place de FaUST ?
 - Grapholine ?
 - Problème du contrôle si deux moteurs.
 
-Cas 1. Séquenceur intégré à i-score
+\subsection{Cas 1. Séquenceur intégré à i-score}
 i-score devient live
 Question principale : gestion de l'horloge
-Possibilité : 
-- Un processus s'enregistre aurpès du mixeur
-- Quand le processus est démarré, le mixeur appelle pull() dessus
-- Problématique : si le processus est déclenché via un évènement interactif, il est nécessaire de le prévoir (par exemple en commençant à appeler pull dès que l'on est dans la zone interactive, ou bien en utilisant des mutex / compteurs atomiques, ou bien en rajoutant de la latence, ou bie en mangeant le début.)
-- Problématique : bufferisation si effet sonore met du temps à s'applique
+L'ébauche d'implémentation réalisée dans le plugin : \lstinline|iscore-addon-audio|
+correspond aux étapes suivantes : 
+\begin{itemize}
+\item Un processus s'enregistre auprès d'un mixeur global.
+\item Quand le processus est démarré, le mixeur appelle \lstinline||pull()| dessus à son tick d'horloge.
+\item Problématique : si le processus est déclenché via un évènement interactif, il est nécessaire d'avoir un méchanisme de synchronisation (par exemple en commençant à appeler pull dès que l'on est dans la zone interactive, ou bien en utilisant des mutex / compteurs atomiques, ou bien en rajoutant de la latence, ou bie en mangeant le début.)
+\item Problématique : bufferisation si effet sonore met du temps à s'appliquer ou à démarrer.
+\end{itemize}
 
-Cas 2. Utilisation d'un séquenceur externe
+Un exemple de processus a été réalisé par le biais de FaUST.
+À chaque tick d'horloge, on va récupérer la sortie d'un plug-in écrit en FaUST.
+On offre une API pour écrire nos propres processus audio; cette API pourrait offrir des spécialisations pour les plug-ins de type VST par exemple.
 
-Cas 3. Utilisation de i-score à haut niveau pour grands scénarios et à bas niveau pour objets sonores.
+\subsection{Cas 2. Utilisation d'un séquenceur sous forme de bibliothèque}
+On pense ici à une bibliothèque dy type libaudiostream.
+En revanche, pour l'instant cette bibliothèque n'offre pas de possibilités 
+d'écriture à la volée, comme le font la majorité des séquenceurs.
+C'est du au fait que l'on décrive un graphe, qui est compilé puis exécuté.
+
+Ce graphe peut contenir une part d'interactivité, mais 
+qui est moins puissante que celle d'i-score.
+
+En revanche il permet de placer dans le temps des effets FaUST ainsi 
+que de l'interactivité dans une certaine mesure (notion de data symbolique); et surtout de réutiliser à
+la volée une entrée temps-réel.
+Il pourrait donc être intéressant d'avoir une approche basée sur cette bibliothèque,
+peut-être en réutilisant certains éléments du formalisme graphique d'i-score 
+mais placés dans un processus répondant aux spécificités de la libaudiostream.
+
+\subsection{Cas 2. Utilisation d'un séquenceur externe}
+Ici, il sera nécessaire de trouver un séquenceur possédant un namespace par OSC, 
+pour le contrôler depuis i-score.
+
+Les avantages sont qu'il y a moins de code à produire s'il existe déjà un 
+tel séquenceur.
+Notamment, les environnements SuperCollider ou Reaper pourraient être utilisés
+à cet effet. Dans les deux cas il sera nécessaire d'offrir un namespace 
+OSC correspondant à leurs API respectives
+\footnote{API Reaper : \url{http://www.reaper.fm/sdk/reascript/reascripthelp.html}}\footnote{Séquençage dans SuperCollider :~\\ \url{http://doc.sccode.org/Tutorials/Getting-Started/15-Sequencing-with-Routines-and-Tasks.html}}.
+
+En revanche, les problèmes posés sont ceux de la latence du réseau, 
+ainsi qu'une complexité accrue d'écriture pour le compositeur, 
+qui doit alors réaliser un travail d'écriture dans un environnement ou il n'a pas 
+accès directement aux paramètres du son.
+
+Un autre example pourrait être avec Unity en tant que moteur de son.
+Unity est un environnement orienté objet plutôt que orienté pistes.
+Une implémentation possible pourrait être d'avoir une 
+piste par objet.
+Unity est capable d'utiliser les informations de position des objets
+pour réaliser une spatialisation du son par rolloff linéaire.
+Il est possible d'écrire un plug-in pour unity qui implémente de 
+meilleurs algorithmes de spatialisation\footnote{\url{http://docs.unity3d.com/Manual/AudioSpatializerSDK.html}}.
+
+La latence mesurée est cependant assez élevée : 120 millisecondes. 
+La mesure de la latence s'est faite de la manière suivante : 
+\begin{itemize}
+	\item Mise en route de l'enregistrement.
+	\item Clic sur un objet qui joue un son percussif.
+	\item Mesure du temps entre le clic et le début du son.
+\end{itemize}
+
+Pour comparaison, sur la même machine, un enregistrement en duplex complet sur un DAW professionnel (on lit un son, on l'enregistre, et on mesure l'écart au son original) produit une latence de 70 millisecondes, c'est à dire qu'on peut supposer 35 millisecondes de latence d'entrée et 35 millisecondes de latence de sortie inhérentes à la carte son.
+La latence de sortie propre à Unity est donc d'environ 85 millisecondes.
+
+Cette latence risque de varier fortement en fonction des périphériques. 
+
+\subsection{Cas 3. Utilisation de i-score à deux échelles}
+i-score est utilisé à haut niveau pour grands scénarios et à bas niveau pour le contrôle des objets sonores.
 Entre les deux communications avec objets qui gèrent le son.
 
-Cas 4. Utilisation de wWise 
+Dans ce cas, on voudra que i-score soit un plug-in qui puisse s'intégrer avec les API des différents logiciels audio 
+comme wWise.
+La question importante est celle du contrôle : si on a plusieurs objets à scénariser, comment 
+ensuite pouvoir contrôler le démarrage de leur scénarisation depuis l'extérieur ? 
+
+Cet extérieur peut être un autre gestionnaire de scénario (comme une instance de i-score), ou bien 
+on peut cacher l'API interne d'i-score derrière une API à utiliser dans Unity pour avoir une communication de la forme : 
+
+\begin{figure}
+	\input{images/unity-1}
+	\end{figure}
+[i-score maître] - [unity] - [game objects] - [ script ossia ] - [ interface objet iscore ] - [ sous-instance i-score ]
+
+Un travail est aussi nécessaire sur la gestion automatique des ports.
+\subsection{Cas 4. Utilisation de wWise }
 Implémentation de i-score / grapholine / autre comme plug-in wWise ?
 
 Pb. de la bufferistaion : temps-réel, latence ?
