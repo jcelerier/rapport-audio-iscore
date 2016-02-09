@@ -4,8 +4,16 @@
 \usepackage{microtype}
 \usepackage[utf8]{inputenc}
 \usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{acronym}
+\usepackage{listings}
 \setmainfont[Ligatures=TeX,Scale=1.1]{EB Garamond}
+\setmonofont[Scale=1.0]{Fira Code}
+\renewcommand{\footnotesize}{\fontsize{7pt}{9pt}\selectfont}
 
+\lstset{basicstyle=\fontsize{10pt}{11pt}\selectfont\ttfamily,breaklines=true}
+\acrodef{DSL}{Domain Specific Language}
+\acrodef{EDSL}{Embedded Domain Specific Language}
 \title{Audio et i-score}
 \author{Jean-Michaël Celerier}
 
@@ -29,34 +37,87 @@ Les questions auxquelles ce document tente d'apporter une ou plusieurs réponses
     \item Comment doit fonctionner la répartition dans un cas ou l'on désire produire une \oe uvre distribuée; cela pose la question de la séparation du moteur d'édition et d'exécution dans le cas du son, ainsi que de leur communication.
     \item Quelles sont les problématiques d'écriture qui se pose lorsque l'on désire écrire des scènes sonores ? (Mute de certaines parties ? Collaboration à l'écriture ?)
     \item Un modèle de calcul a-t-il sa place dans l'environnement, et si oui, qui doit le fournir, et où ces calculs sont-ils écrits ?
-    
 \end{itemize}
-- fonctionnement sur mobile / web ? iOS : pas d'IPC : https://developer.apple.com/library/ios/documentation/iPhone/Conceptual/iPhoneOSProgrammingGuide/Inter-AppCommunication/Inter-AppCommunication.html
-Tout intégrer dans une appli ?
-- Séparation écriture / exécution
-- gestion des médias ?
-- répartition ? (son sur téléphone)
-- facilité de l'écriture : côté GAF ? côté BY ? côté artistes ?
-- modèle de calcul ? veut-on écrire une cumulation d'effets dans i-score 
-ou bien avoir tous les calculs faits à l'extérieur ?
+
+% - Séparation écriture / exécution
+% - facilité de l'écriture : côté GAF ? côté BY ? côté artistes ?
+% - modèle de calcul ? veut-on écrire une cumulation d'effets dans i-score  ou bien avoir tous les calculs faits à l'extérieur ?
+
+\section{Problématiques techniques}
+\subsection{Fonctionnement sur mobile / plate-formes embarquées}
+Il n'y a généralement pas ou peu d'IPC sur ces plate-formes : tout doit être contenu dans une seule application.
+Exception : les applications audio sur iOS, depuis iOS 7\footnote{\url{https://developer.apple.com/library/ios/documentation/iPhone/Conceptual/iPhoneOSProgrammingGuide/Inter-AppCommunication/Inter-AppCommunication.html}}\footnote{\url{http://www.musicradar.com/tuition/tech/audiobus-vs-inter-app-audio-which-is-best-620144}}.
+La méthode standard est de communiquer via internet.
+
+Plusieurs approches : Audiobus, Ableton Link.
+
+Pour Android il n'y a pas encore de standard pour le faire
+\footnote{\url{http://developer.samsung.com/galaxy\#professional-audio}}
+\footnote{\url{http://superpowered.com/}}
+\footnote{\url{http://discchord.com/blog/2013/9/4/patchfield-audio-architecture-for-android.html}}.
 
 \section{Types de moteurs audio}
-- Audiographes
-- Moteurs simples
-- Logiciels (Max, etc.)
-- Moteurs de jeu
-- Moteurs déclaratifs
-- Briques d'effets / de synthèse
-- DSL
+Il existe de nombreuses possibilités pour écrire une application 
+produisant du son. 
+Les outils que l'on considère peuvent se répartir dans différentes
+catégories (et faire partie de plus d'une catégorie à la fois).
+\begin{itemize}
+    \item Application graphique (Max/MSP, Ableton Live)
+    \item Bibliothèque, framework, API (PortAudio, Jamoma)
+    \item Middleware (wWise, Unity)
+    \item \ac{DSL} (FaUST, Max/MSP)
+    \item Application de contrôle et de routage (Audiobus, JACK)
+    \item Plug-in pour une autre application (ils sont nombreux)
+\end{itemize}
 
-Autre possibilitié intéressante issue de Faust : utiliser LLVM pour recompiler 
+Les interactions peuvent être nombreuses entre ces formats :
+Par exemple, un middleware peut fournir une API pour intégrer des plug-ins.
+Un de ces plug-ins peut être écrit dans un DSL qui est compilé en C.
+
+Les API vont être de plusieurs types : 
+\begin{itemize}
+\item API d'intégration : pour rajouter des outils audio à un système complet (ex. : API VST).
+\item API de création : pour créer ses propres outils audio (ex. : STK).
+\end{itemize}
+
+Un autre axe est la main que prend l'API sur la gestion du son : 
+\begin{itemize}
+\item API maîtresse : le programmeur n'a pas le contrôle du flot audio. Ex. : OpenAL, Unity.
+\item API esclave : le programmeur contrôle le flot audio (il n'est pas géré par l'API). Ex. : PortAudio, API bas-niveau.
+\end{itemize}
+
+Certaines API peuvent fonctionner des deux manières.
+
+On trouve de plus plusieurs modes d'exécution (qui là encore peuvent fonctionner de concert) : 
+\begin{itemize}    
+    \item Déclaratif : on décrit à l'avance les traitements qui vont avoir lieu dans un langage propre à l'API (souvent un \ac{EDSL}).
+    \item Graphe audio : cas déclaratif le plus courant.
+    On décrit la manière dont des blocs audio qui appliquent un traitement sont reliés entre eux. 
+    \item Push : très utilisé dans les moteurs de jeu; l'utilisateur doit régulièrement appeler une fonction, 
+    généralement dans la boucle \lstinline{update()}, qui va mettre à jour le son.
+    \item Pull : l'API appelle régulièrement une fonction fournie par l'utilisateur qui remplit un buffer audio.
+C'est l'approche la plus courante pour du code bas-niveau ou devant être performant car elle correspond 
+au fonctionnement des drivers audio.
+\end{itemize}
+
+
+Autre possibilitié intéressante issue de Faust : utiliser LLVM pour recompiler et optimiser
 à la volée du patch ?
+\section{Modèle de données}
 \section{Gestion de la spatialisation}
 
 \section{Briques en présence}
-- Source de données spatiales fixées (carte, scénario, tableau, ...).
-- i-score : scénarisation
-- Source de données spatiales temps-réel (GPS, etc.).
+Les outils dont on dispose sont : 
+\begin{itemize}
+    \item Des moteurs de scénarisation. Un moteur de scénarisation permet de décrire une évolution du temps, 
+    en prenant en compte des évènements extérieurs. 
+    i-score et wWise en sont.
+    \item Des scènes spatiales. 
+    Ce sont des descriptions et agencements d'objets en deux ou trois dimensions qui peuvent évoluer.
+    \item Des moteurs de son.
+    \item Des moteurs de physique : prennent à un instant t une scène spatiale et la transforment en une autre scène après application des lois physiques en vigueur (gravité, etc.).
+    \item Des sources de données spatiales.
+\end{itemize}
 
 \section{Possibilités d'implémentation}
 Questions : 
