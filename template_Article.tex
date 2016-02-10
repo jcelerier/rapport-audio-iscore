@@ -191,6 +191,7 @@ En revanche, les problèmes posés sont ceux de la latence du réseau,
 ainsi qu'une complexité accrue d'écriture pour le compositeur, 
 qui doit alors réaliser un travail d'écriture dans un environnement ou il n'a pas 
 accès directement aux paramètres du son.
+Par exemple, il sera dur d'implémenter efficacement le visionnage d'une waveform.
 
 Un autre example pourrait être avec Unity en tant que moteur de son.
 Unity est un environnement orienté objet plutôt que orienté pistes.
@@ -216,20 +217,27 @@ Cette latence risque de varier fortement en fonction des périphériques.
 
 \subsection{Cas 3. Utilisation de i-score à deux échelles}
 i-score est utilisé à haut niveau pour grands scénarios et à bas niveau pour le contrôle des objets sonores.
-Entre les deux communications avec objets qui gèrent le son.
+Entre les deux, prennent place des communications avec les objets qui gèrent le son.
 
-Dans ce cas, on voudra que i-score soit un plug-in qui puisse s'intégrer avec les API des différents logiciels audio 
-comme wWise.
+Dans ce cas, on voudra que i-score soit un plug-in qui puisse s'intégrer avec les API des différents logiciels audio comme wWise; c'est le cas de l'objet 2 en fig.~\ref{fig.com.iscore.unity}.
+
 La question importante est celle du contrôle : si on a plusieurs objets à scénariser, comment 
 ensuite pouvoir contrôler le démarrage de leur scénarisation depuis l'extérieur ? 
 
 Cet extérieur peut être un autre gestionnaire de scénario (comme une instance de i-score), ou bien 
-on peut cacher l'API interne d'i-score derrière une API à utiliser dans Unity pour avoir une communication de la forme : 
+on peut cacher l'API interne d'i-score derrière une API à utiliser dans Unity pour avoir un environnement entièrement intégré. 
+Cela est nécessaire pour le portage vers certaines plate-formes. Ce cas est semblable à celui de l'objet 1 en fig.~\ref{fig.com.iscore.unity}, mais les flèches qui partent du i-score maître partent alors du player i-score.
+
+On pourrait supposer que dans ce cas, l'horloge d'exécution serait donnée par Unity. 
+La durée d'un tick serait donc celle d'une frame graphique : généralement 16 millisecondes.
 
 \begin{figure}
-	\input{images/unity-1}
-	\end{figure}
-[i-score maître] - [unity] - [game objects] - [ script ossia ] - [ interface objet iscore ] - [ sous-instance i-score ]
+    \centering
+	\scalebox{0.6}{\input{images/unity-1}}
+    \caption{Illustration des communications possibles entre i-score et Unity:
+        Une flèche à pointe noire illustre une communication directe. Une flèche à pointe blanche illustre une communication réseau. Les logiciels sont en rond, les objets Unity en carré, les scripts unity en losange.}
+    \label{fig.com.iscore.unity}
+\end{figure}
 
 Un travail est aussi nécessaire sur la gestion automatique des ports.
 \subsection{Cas 4. Utilisation de wWise }
