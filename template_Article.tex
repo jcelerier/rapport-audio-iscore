@@ -109,9 +109,14 @@ au fonctionnement des drivers audio.
 \end{itemize}
 
 
-Autre possibilitié intéressante issue de Faust : utiliser LLVM pour recompiler et optimiser
+Autre possibilité intéressante issue de Faust : utiliser LLVM pour recompiler et optimiser
 à la volée du patch ?
+Sans cela, il est aussi possible d'envisager d'utiliser libpd.
 \section{Modèle de données}
+Protocole de communication pour informer des données audio ? 
+Si par exemple on veut avoir des pistes en sortie d'i-score qui rentrent 
+dans wWise ou autre, comment fait-on ? 
+Tout mixer sur le nombre de canaux offerts ? Ou faire le mixage avec JACK ?
 \section{Gestion de la spatialisation}
 
 \section{Briques en présence}
@@ -141,9 +146,12 @@ Questions :
 - SuperCollider comme moteur audio ?
 - Tout dans i-score ? 
 - libaudiostream et la place de FaUST ?
+- libpd?
 - Grapholine ?
 - Problème du contrôle si deux moteurs.
 
+=> Question principale : dans quel langage écrit-on le comportement 
+sonore des objets interactifs ?
 \subsection{Cas 1. Séquenceur intégré à i-score}
 i-score devient live
 Question principale : gestion de l'horloge
@@ -224,7 +232,7 @@ Cette latence risque de varier fortement en fonction des périphériques.
     \label{fig.com.iscore.unity}
 \end{figure}
 
-i-score est utilisé à haut niveau pour grands scénarios et à bas niveau pour le contrôle des objets sonores.
+i-score est utilisé à haut niveau pour des grands scénarios et à bas niveau pour le contrôle des objets sonores.
 Entre les deux, prennent place des communications avec les objets qui gèrent le son.
 
 La question importante est celle du contrôle : si on a plusieurs objets à scénariser, comment 
@@ -244,16 +252,24 @@ La durée d'un tick serait donc celle d'une frame graphique : généralement 16 
 Enfin, l'implémentation actuelle est donnée dans l'objet 3 : il n'y a pas d'i-score "sous" Unity; le contrôle est fait par un i-score extérieur qui peut contrôler les propriétés de tout objet Unity. 
 
 Un travail est aussi nécessaire sur la gestion automatique des ports, s'il y a plusieurs instances d'i-score qui communiquent directement par réseau, ou bien un travail d'identification est nécessaire si la communication est dirigée par l'horloge d'Unity.
-\subsection{Cas 4. Utilisation de wWise }
+\subsection{Cas 4. Utilisation de wWise}
 Implémentation de i-score / grapholine / autre comme plug-in wWise ?
 
 Pb. de la bufferistaion : temps-réel, latence ?
 
+Question de la license pour des extensions wWise ? 
+Il existe des extensions sous licenses libres : 
+\begin{itemize}
+	\item LGPL : https://github.com/dblstallion/s3eWwise
+	\item MIT : https://github.com/CaKlassen/gmwwise
+\end{itemize}
+Est-ce légal ?
 \section{Questions sémantiques}
 Possibilté d'utilisation d'un outil comme OWL ?
 
 \section{Utilisation pour les applications possibles}
 - Tableaux, installs, etc.
 - Morceaux de musiques interactifs que l'on peut distribuer par internet ?
+- Donner example scénario
 
 \end{document}
