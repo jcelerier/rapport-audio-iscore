@@ -38,7 +38,7 @@ pour l'écriture et l'utilisation de son dans i-score,
 et les environnements qui peuvent lui être adjoints.
 
 \subsection{Problématique}
-Les questions auxquelles ce document tente d'apporter une ou plusieurs réponses sont les suivantes : 
+Ce document pose plusieurs questions, et pour chacunes essaye d'apporter les différentes réponses possibles.
 \begin{itemize}
     \item Quel doit être l'agencement des responsabilités entre i-score et les outils annexes pour avoir des possibilités d'écriture maximale.
     Cette question de partage de responsabilités se pose aussi au niveau des utilisateurs de ces outils : qui utilise i-score ? Qui utilise wWise ? Qui utilise Unity ? 
@@ -117,7 +117,6 @@ Protocole de communication pour informer des données audio ?
 Si par exemple on veut avoir des pistes en sortie d'i-score qui rentrent 
 dans wWise ou autre, comment fait-on ? 
 Tout mixer sur le nombre de canaux offerts ? Ou faire le mixage avec JACK ?
-\section{Gestion de la spatialisation}
 
 \section{Briques en présence}
 Les outils dont on dispose sont : 
@@ -125,8 +124,10 @@ Les outils dont on dispose sont :
     \item Des moteurs de scénarisation. Un moteur de scénarisation permet de décrire une évolution du temps, 
     en prenant en compte des évènements extérieurs. 
     i-score et wWise en sont.
-    \item Des scènes spatiales. 
-    Ce sont des descriptions et agencements d'objets en deux ou trois dimensions qui peuvent évoluer.
+    \item Des sources de données écrites (scènes) spatiales. 
+    Ce sont des descriptions et agencements d'objets en deux ou trois dimensions qui peuvent évoluer. 
+    Dans le cadre des moteurs de jeux vidéos, on parle souvent de World Builders.
+    On peut aussi mettre dans ce cas les automations à une ou plusieurs dimensions (par exemple, splines d'animations).
     \item Des moteurs de son, tels que décrits précédemment.
     \item Des moteurs de physique : prennent à un instant t une scène spatiale et la transforment en une autre scène après application des lois physiques en vigueur (gravité, etc.).
     \item Des sources de données spatiales : GPS, etc.
@@ -143,18 +144,22 @@ Questions :
 \item qui fait office de source sonore
 \item qui communique avec qui
 \end{itemize}
-- SuperCollider comme moteur audio ?
-- Tout dans i-score ? 
-- libaudiostream et la place de FaUST ?
-- libpd?
-- Grapholine ?
-- Problème du contrôle si deux moteurs.
 
-=> Question principale : dans quel langage écrit-on le comportement 
+En vrac : 
+\begin{itemize}
+\item SuperCollider comme moteur audio ?
+\item Tout dans i-score ? 
+\item libaudiostream et la place de FaUST ?
+\item libpd?
+\item Grapholine ?
+\item Problème du contrôle si deux moteurs.
+\end{itemize}
+
+Une des questionq principale est : dans quel langage écrit-on le comportement 
 sonore des objets interactifs ?
-\subsection{Cas 1. Séquenceur intégré à i-score}
-i-score devient live
-Question principale : gestion de l'horloge
+\subsection{Séquenceur intégré à i-score}
+i-scor epourrait devenir un séquenceur audio complet.
+Question principale : gestion de l'horloge.
 L'ébauche d'implémentation réalisée dans le plugin : \lstinline|iscore-addon-audio|
 correspond aux étapes suivantes : 
 \begin{itemize}
@@ -164,11 +169,20 @@ correspond aux étapes suivantes :
 \item Problématique : bufferisation si effet sonore met du temps à s'appliquer ou à démarrer.
 \end{itemize}
 
-Un exemple de processus a été réalisé par le biais de FaUST.
+Un exemple de processus a été réalisé par le biais de FaUST, et un autre permet de lire des fichiers WAV.
 À chaque tick d'horloge, on va récupérer la sortie d'un plug-in écrit en FaUST.
 On offre une API pour écrire nos propres processus audio; cette API pourrait offrir des spécialisations pour les plug-ins de type VST par exemple.
 
-\subsection{Cas 2. Utilisation d'un séquenceur sous forme de bibliothèque}
+Pour cette approche, il est nécessaire de rajouter dans i-score : 
+\begin{itemize}
+    \item Une gestion plus poussées des médias, et une notion de projet plus forte.
+    \item Une gestion des canaux, et des pistes sons.
+    On pourrait imaginer avoir un process Piste audio, qui est une succession de contraintes, et sur lequel s'applique une chaîne d'effet, comme dans un séquenceur classique.
+    Réfléchir à la notion de groupe : un processus audio auquel des effets sont appliqués les applique certainement à ses enfants.
+    \item L'application des automations et des mappings sur les paramètres de ces effets et pistes audio.
+\end{itemize}
+
+\subsection{Utilisation d'un séquenceur sous forme de bibliothèque}
 On pense ici à une bibliothèque dy type libaudiostream.
 En revanche, pour l'instant cette bibliothèque n'offre pas de possibilités 
 d'écriture à la volée, comme le font la majorité des séquenceurs.
@@ -184,7 +198,10 @@ Il pourrait donc être intéressant d'avoir une approche basée sur cette biblio
 peut-être en réutilisant certains éléments du formalisme graphique d'i-score 
 mais placés dans un processus répondant aux spécificités de la libaudiostream.
 
-\subsection{Cas 2. Utilisation d'un séquenceur externe}
+On peut aussi imaginer s'inspirer des briques de la libaudiostream qui ne sont pas présentes 
+dans i-score, comme la gestion du multi-canal, que l'on pourrait réimplémenter en prenant en compte le graphe d'objets de i-score.
+
+\subsection{Utilisation d'un séquenceur externe}
 Ici, il sera nécessaire de trouver un séquenceur possédant un namespace par OSC, 
 pour le contrôler depuis i-score.
 
@@ -223,7 +240,7 @@ La latence de sortie propre à Unity est donc d'environ 85 millisecondes.
 
 Cette latence risque de varier fortement en fonction des périphériques. 
 
-\subsection{Cas 3. Utilisation de i-score à deux échelles}
+\subsection{Utilisation de i-score à deux échelles}
 \begin{figure}
     \centering
     \scalebox{0.5}{\input{images/unity-1}}
@@ -252,24 +269,74 @@ La durée d'un tick serait donc celle d'une frame graphique : généralement 16 
 Enfin, l'implémentation actuelle est donnée dans l'objet 3 : il n'y a pas d'i-score "sous" Unity; le contrôle est fait par un i-score extérieur qui peut contrôler les propriétés de tout objet Unity. 
 
 Un travail est aussi nécessaire sur la gestion automatique des ports, s'il y a plusieurs instances d'i-score qui communiquent directement par réseau, ou bien un travail d'identification est nécessaire si la communication est dirigée par l'horloge d'Unity.
-\subsection{Cas 4. Utilisation de wWise}
-Implémentation de i-score / grapholine / autre comme plug-in wWise ?
+
+\subsection{Intégration de i-score dans Unity}
+Possibilités :
+\begin{itemize}
+\item avoir des éléments de la vue d'i-score intégrés aux objets unity
+\item avoir des morceaux de vue Qt dans les panneaux unity, en faisant un rendu dans un FBO
+\item échange de données à haut niveau : si par exemple on a des trajectoires dans unity, pouvoir aussi les visualiser dans i-score et réciproquement
+\item rendu de parties de la scène unity dans fenêtre i-score (nécessite de voir comment on fait un rendu opengl dans QGraphicsScene) : cela peut ouvrir la porte à du rendu de parties de Unity dans i-score\footnote{\url{http://answers.unity3d.com/questions/871077/how-to-display-unity-scene-in-a-qt-window.html}}. Sinon il est possible de voir avec Qt3D.
+\end{itemize}
+
+De manière générale pour l'implémentation, si une brique audio est réalisée, la communication avec d'autres environnements doit être d'une importance extrême.
+
+Pour ce faire, le principe est généralement d'écrire une fonction de la forme : 
+\begin{lstlisting}
+    void compute(float** in, float** out, int channel_size, int buffer_size);
+\end{lstlisting}
+Il y a généralement des paramètres à contrôler : chaque API (Audio Unit, VST\dots) a sa propre manière d'exprimer ces paramètres.
+
+Si i-score lui même devient la brique audio, il pourrait être possible de : 
+\begin{itemize}
+    \item Utiliser i-score pour héberger d'autres plug-ins audio (par exemple dans les processus).
+    \item Utiliser i-score en tant que plug-in dans d'autres applications (en l'intégrant dans la chaîne de traitements de Max, Unity, Pd, etc).
+\end{itemize}
+
+Cela implique une séparation dans le moteur d'exécution entre le back-end audio (ex. RtAudio, JACK, PortAudio), et l'exécution elle-même. 
 
 Pb. de la bufferistaion : temps-réel, latence ?
 
-Question de la license pour des extensions wWise ? 
+Question de la license pour des extensions wWise et Unity ? 
 Il existe des extensions sous licenses libres : 
 \begin{itemize}
 	\item LGPL : https://github.com/dblstallion/s3eWwise
 	\item MIT : https://github.com/CaKlassen/gmwwise
 \end{itemize}
-Est-ce légal ?
+
+
+\subsection{Export de scénario en tant que module}
+Possibilité : compilation d'un scénario i-score via LLVM en 
+un objet exécutable.
+
+Cela aurait pour conséquence la possibilité d'exécuter de tels 
+scénarios dans tout environnement ciblé par LLVM, comme par 
+exemple une page web.
+
+Cependant il est nécessaire dans ce cas de voir l'intégration 
+avec Unity.
+
+Il faut aussi gérer le case de la communication réseau qui 
+est dans ce cas restreinte aux WebSockets (avec la nécessité de 
+passer par l'API emscripten, et bientôt WebAssembly). 
+De même pour l'audio et le midi : il faudra utiliser Web Audio API\footnote{\url{http://webaudio.github.io/web-audio-api/}}, et Web MIDI API\footnote{\url{https://webaudio.github.io/web-midi-api/}}.
+
+Unity s'exporte aussi sur toutes les plate-formes.
+Cependant sur certaines plate-formes les extensions natives ne sont 
+pas supportées.
+
+Une possibilité : compiler i-score en JavaScript via emscripten, 
+et l'utiliser en tant que script Unity ? 
+
 \section{Questions sémantiques}
 Possibilté d'utilisation d'un outil comme OWL ?
 
-\section{Utilisation pour les applications possibles}
-- Tableaux, installs, etc.
-- Morceaux de musiques interactifs que l'on peut distribuer par internet ?
-- Donner example scénario
+\section{Applications possibles}
+\begin{itemize}
+\item Tableaux, installations, etc.
+\item Morceaux de musiques interactifs que l'on peut distribuer par internet.
+\item Jeux vidéos musicaux.
+\item Aide au handicap.
+\end{itemize}
 
 \end{document}
